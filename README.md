@@ -16,3 +16,5 @@ find the line "#include "C:\Users\JJ Hardt\Documents\arduino-1.8.19\portable\ske
 Wompler manual:
 <br>
 https://docs.google.com/document/d/1GjeHvt_AO2QE2bgJas3L68PRGj3EGleQ7ScGcbaWzwo/edit?usp=sharing
+
+Gerber files, PNP, and 3d printed panel found in "/hardware" folder as well as EasyEDA files
