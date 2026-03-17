@@ -1,0 +1,220 @@
+
+class VolumeStreamX : public AudioStream {
+    public:
+        /// Default Constructor
+        VolumeStreamX() = default;
+
+        /// Destructor
+        ~VolumeStreamX() {
+          
+        };
+
+        /// Constructor which assigns Print output
+        VolumeStreamX(Print &out) {
+            setTarget(out);
+        }
+
+        /// Constructor which assigns Stream input or output
+        VolumeStreamX(Stream &in) {
+            setStream(in);
+        }
+
+        /// Constructor which assigns Print output
+        VolumeStreamX(AudioOutput &out) {
+            Print *p_print = &out;
+            setTarget(*p_print);
+            p_notify = (AudioInfoDependent*) &out;
+        }
+
+        /// Constructor which assigns Stream input or output
+        VolumeStreamX(AudioStream &io) {
+            Stream *p_stream = &io;
+            setStream(*p_stream);
+            p_notify = (AudioInfoDependent *)&io;
+        }
+
+        /// Defines/Changes the output target
+        void setTarget(Print &out){
+            p_out = &out;
+        }
+
+        /// same as setStream        
+        void setTarget(Stream &in){
+            p_in = &in;
+            p_out = p_in;
+        }
+
+        /// Defines/Changes the input & output
+        void setStream(Stream &in){
+            p_in = &in;
+            p_out = p_in;
+        }
+
+        VolumeStreamConfig defaultConfig() {
+            VolumeStreamConfig c;
+            return c;
+        }
+
+        bool begin(AudioInfo cfg)  {
+          VolumeStreamConfig cfg1;
+          cfg1.channels = cfg.channels;
+          cfg1.sample_rate = cfg.sample_rate;
+          cfg1.bits_per_sample = cfg.bits_per_sample;
+          // keep volume which might habe been defined befor calling begin
+          cfg1.volume = info.volume;  
+          return begin(cfg1);
+        }
+
+        void end() override {
+            is_active = false;
+			factor_for_channelX[1]=255;
+			factor_for_channelX[0]=255;
+        }
+		
+		
+
+        /// starts the processing 
+        bool begin(VolumeStreamConfig cfg){
+            TRACED();
+            info = cfg;
+            max_value = NumberConverter::maxValue(info.bits_per_sample);
+            if (info.channels>max_channels){
+              max_channels = info.channels;
+            }
+
+           
+
+            // set start volume
+            setVolume(cfg.volume); 
+
+            return true;
+        }
+
+
+        /// Read raw PCM audio data, which will be the input for the volume control 
+        virtual size_t readBytes(uint8_t *buffer, size_t length) override { 
+            TRACED();
+            if (buffer==nullptr || p_in==nullptr){
+                LOGE("NPE");
+                return 0;
+            }
+            size_t result = p_in->readBytes(buffer, length);
+            if (is_active) {
+				applyVolumeX((int16_t*)buffer,length);}
+				
+			}
+            return result;
+        }
+
+        /// Writes raw PCM audio data, which will be the input for the volume control 
+        virtual size_t write(const uint8_t *buffer, size_t size) override {
+            TRACED();
+            if (buffer==nullptr || p_out==nullptr){
+                LOGE("NPE");
+                return 0;
+            }
+            if (is_active) {
+				applyVolumeX((int16_t*)buffer,size/2);}
+				
+				};
+            return p_out->write(buffer, size);
+        }
+
+        /// Provides the nubmer of bytes we can write
+        virtual int availableForWrite() override { 
+            return p_out==nullptr? 0 : p_out->availableForWrite();
+        }
+
+        /// Provides the nubmer of bytes we can write
+        virtual int available() override { 
+            return p_in==nullptr? 0 : p_in->available();
+        }
+
+        /// Detines the Audio info - The bits_per_sample are critical to work properly!
+        void setAudioInfo(AudioInfo cfg) override {
+            TRACED();
+            // pass on notification
+            if (p_notify!=nullptr){
+              p_notify->setAudioInfo(cfg);
+            }
+            begin(cfg);
+        }
+
+		void setPan(int8_t pan){
+			
+			setVolumeX(pan-128,0);
+			setVolumeX(127-(pan-128),1);
+			
+		}
+		  void setVolumeX(int8_t vol, int channel){
+            if (channel<info.channels){
+				is_active = vol!=255;
+//cleanupX();
+              //factor_for_channelX = new int8_t[info.channels];
+             
+              //int8_t factor =logtable[vol];
+              factor_for_channelX[channel]=logtable[vol];
+			 
+            } else {
+              LOGE("Invalid channel %d - max: %d", channel, info.channels);
+            }
+        }
+
+        /// Provides the current volume setting
+        float volume() {
+            return volume_values[0];
+        }
+
+        /// Provides the current volume setting for the indicated channel
+        float volume(int channel) {
+            return channel>=info.channels? 0 : volume_values[channel];
+        }
+
+    protected:
+	
+        Print *p_out=nullptr;
+        Stream *p_in=nullptr;
+        VolumeStreamConfig info;
+       
+        
+		int8_t factor_for_channelX[2]={255,255};
+        bool is_active = false;
+        float max_value = 32767; // max value for clipping
+        int max_channels=0;
+		
+
+        void setup(float vol) {
+            is_active = vol!=1.0f;
+            if (info.channels>max_channels){
+              cleanup();
+            }
+            if (factor_for_channel==nullptr ){
+              factor_for_channel = new float[info.channels];
+            }
+            if (volume_values==nullptr){
+              volume_values = new float[info.channels];
+            }
+        }
+
+       
+		
+		uint8_t factorForChannelX(int channel){
+            return factor_for_channelX==nullptr ? 255 : factor_for_channelX[channel];
+        }
+
+     
+		
+		 void applyVolumeX(int16_t* data, size_t size){
+            for (size_t j=0;j<size;j++){
+				
+                int result = (factor_for_channelX[j & 1]* data[j])>>7;
+                //int result = (factor_for_channelX[j%2]* data[j])>>7;
+                if (!info.allow_boost){
+                    if (result>max_value) result = max_value;
+                    if (result<-max_value) result = -max_value;
+                } 
+                data[j]= static_cast<int16_t>(result);
+            }
+        }
+
+
