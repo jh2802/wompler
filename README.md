@@ -20,3 +20,4 @@ https://docs.google.com/document/d/1GjeHvt_AO2QE2bgJas3L68PRGj3EGleQ7ScGcbaWzwo/
 Gerber files, PNP, and 3d printed panel found in "/hardware" folder as well as EasyEDA files
 
 <a href="https://www.youtube.com/shorts/Yl5tXINzOkQ">Youtube audio demo:</a><br>
+<iframe width="554" height="985" src="https://www.youtube.com/embed/Yl5tXINzOkQ" title="Wompler Audio Demo DIY Sampler using ESP32 with 6 Voices and Realtime filters, FM, Wavetable" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
