@@ -18,3 +18,5 @@ Wompler manual:
 https://docs.google.com/document/d/1GjeHvt_AO2QE2bgJas3L68PRGj3EGleQ7ScGcbaWzwo/edit?usp=sharing
 
 Gerber files, PNP, and 3d printed panel found in "/hardware" folder as well as EasyEDA files
+
+<a href="https://www.youtube.com/shorts/Yl5tXINzOkQ"Youtube audio demo:</a><br>
